@@ -13,7 +13,7 @@ class ListCreateAdminView(APIView):
     POST request creates a new Admin object using the data provided in the request.
     """
     def get(self, request: HttpRequest) -> Response:
-        admins = Admin.objects.all()
+        admins = Admin.objects.all().order_by('pk')
         admin_serializer = AdminSerializer(admins, many=True)
 
         return Response(admin_serializer.data)

@@ -60,3 +60,10 @@ USER app
 
 # run entrypoint.prod.sh
 ENTRYPOINT ["/home/app/web/entrypoint.prod.sh"]
+
+# set the working directory to the app directory
+WORKDIR /usr/src/app
+
+# specify the command to run on container startup
+CMD ["gunicorn", "app_config.wsgi:application", "--bind", "0.0.0.0:8000","--reload"]
+
