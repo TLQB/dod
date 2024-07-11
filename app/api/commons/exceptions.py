@@ -17,3 +17,32 @@ class ValidationException(APIException):
             self.data = data
 
         super().__init__(code=self.default_code)
+
+class Unauthorized(APIException):
+    """
+    Class for unauthorized exception.
+    """
+    status_code = status.HTTP_401_UNAUTHORIZED
+    default_code = APIErrorCode.HTTP_401_UNAUTHORIZED
+    default_detail = APIErrorMessage.HTTP_401_UNAUTHORIZED
+
+    def __init__(self, data=None):
+        if data is not None:
+            self.data = data
+
+        super().__init__(code=self.default_code)
+
+class NotFoundException(APIException):
+    """
+    Class for not found exception.
+    """
+
+    status_code = status.HTTP_404_NOT_FOUND
+    default_code = APIErrorCode.HTTP_404_NOT_FOUND
+    default_detail = APIErrorMessage.HTTP_404_NOT_FOUND
+
+    def __init__(self, data=None):
+        if data is not None:
+            self.data = data
+
+        super().__init__(code=self.default_code)

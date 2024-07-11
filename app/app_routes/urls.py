@@ -23,5 +23,6 @@ import os
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/v1/admins/', include('api.api_v1.admins.urls')),
+    path('api/v1/token/', include('api.api_v1.token.urls')),
 ]
 

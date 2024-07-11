@@ -4,7 +4,45 @@ from django.http.request import HttpRequest
 from models_v1.models import Admin
 from api.api_v1.admins.serializers import AdminSerializer
 from api.commons.validation import ValidateError, UNIQUE_ERR 
-from api.commons.exceptions import ValidationException
+from api.commons.exceptions import ValidationException, Unauthorized, NotFoundException
+from django.contrib.auth.hashers import check_password
+from shares.token import TokenSerializer, AdminTokenModel, get_tokens_for_admin
+from rest_framework.permissions import IsAuthenticated
+from rest_framework_simplejwt.authentication import JWTAuthentication
+from utils.util import gen_password, get_object
+from django.contrib.auth.hashers import check_password, make_password
+
+class LoginView(APIView):
+    authentication_classes = []
+    permission_classes = []
+    def post(self, request: HttpRequest) -> Response:
+        data: dict = request.data
+
+        name = data.get("name")
+        password = data.get("password")
+
+        if name is None or name.strip() == "" or password is None or password.strip() == "":
+            raise Unauthorized
+
+        admin = Admin.objects.filter(name=name, is_enabled=True).first()
+        if admin is None:
+            raise Unauthorized
+
+        if check_password(password, admin.password):
+            # Generate token
+            admin_token_model = AdminTokenModel(
+                admin.id,
+                admin.name,
+                admin.email,
+                admin.is_master,
+            )
+            token = get_tokens_for_admin(admin_token_model)
+            token_serializer = TokenSerializer(token)
+
+            return Response(token_serializer.data)
+
+        raise Unauthorized
+
 
 class ListCreateAdminView(APIView):
     """
@@ -25,12 +63,13 @@ class ListCreateAdminView(APIView):
         """
         data: dict = request.data
 
-        admin = Admin.objects.filter(name=data['name'], is_enabled=True).exists()
+        admin = Admin.objects.filter(name=data['name'], is_enabled=True).exists() 
 
         if admin:
             list_error = ValidateError('name', [UNIQUE_ERR])
             raise ValidationException(list_error)
 
+        data["password"] = gen_password(data["password"])
         admin_serializer = AdminSerializer(data=data)
         if admin_serializer.is_valid(raise_exception=True):
             admin_serializer.save()
@@ -60,7 +99,7 @@ class DetailEditDeleteAdminView(APIView):
         Returns:
         A JSON response containing the serialized admin details.
         """
-        admin = Admin.objects.get(pk=admin_id)
+        admin = get_object(Admin, admin_id)
         admin_serializer = AdminSerializer(admin)
 
         return Response(admin_serializer.data)
@@ -78,8 +117,10 @@ class DetailEditDeleteAdminView(APIView):
         A JSON response containing the updated serialized admin details.
         """
         data: dict = request.data
+        data["password"] = gen_password(data["password"])
 
-        admin = Admin.objects.get(pk=admin_id)
+        admin = get_object(Admin, admin_id)
+
         admin_serializer = AdminSerializer(admin, data=data, partial=True)
         if admin_serializer.is_valid(raise_exception=True):
             admin_serializer.save()
@@ -96,7 +137,8 @@ class DetailEditDeleteAdminView(APIView):
         Returns:
         A JSON response containing the ID of the deleted admin.
         """
-        admin = Admin.objects.get(pk=admin_id)
+        admin = get_object(Admin, admin_id)
+        id_delete = admin.id
         admin.delete()
-        return Response({"delete_id": admin.id})
+        return Response({"delete_id": id_delete})
 

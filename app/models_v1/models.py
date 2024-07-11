@@ -17,7 +17,7 @@ class Admin(AbstractBaseUser, BaseModel):
     id = models.AutoField(auto_created=True, primary_key=True)
     email = models.CharField(max_length=255)
     password = models.CharField(max_length=255)
-    name = models.CharField(max_length=50)
+    name = models.CharField(max_length=50, unique=True)
     is_mailauth_completed = models.BooleanField(default=0)
     is_master = models.BooleanField(default=0)
     is_enabled = models.BooleanField(default=1)
