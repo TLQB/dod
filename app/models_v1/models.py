@@ -32,3 +32,12 @@ class Admin(AbstractBaseUser, BaseModel):
     class Meta:
         db_table = "admins"
         app_label = "api"
+
+class MailTemp(BaseModel):
+    id = models.AutoField(auto_created=True, primary_key=True)
+    account_id = models.PositiveIntegerField()
+    hash = models.CharField(max_length=255)
+    expire_time = models.DateTimeField()
+
+    class Meta:
+        db_table = "mail_temps"

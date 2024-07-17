@@ -1,30 +1,47 @@
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.http.request import HttpRequest
-from models_v1.models import Admin
+from django.utils import timezone
+from models_v1.models import Admin, MailTemp
 from api.api_v1.admins.serializers import AdminSerializer
-from api.commons.validation import ValidateError, UNIQUE_ERR 
+from api.commons.validation import ValidateError, UNIQUE_ERR
 from api.commons.exceptions import ValidationException, Unauthorized, NotFoundException
 from django.contrib.auth.hashers import check_password
 from shares.token import TokenSerializer, AdminTokenModel, get_tokens_for_admin
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.authentication import JWTAuthentication
-from utils.util import gen_password, get_object
+from utils.util import gen_password, get_object, send_email, gen_hash_email
 from django.contrib.auth.hashers import check_password, make_password
+from api.commons.constants.template_mail import ConstantTemplateMail
+from django.template.loader import render_to_string
+from api.commons.constants.admin import ConstantAdmin
+from typing import Dict
+from django.conf import settings
+from datetime import timedelta
+from api.commons.constants.admin import ConstantAdmin
+
 
 class LoginView(APIView):
     authentication_classes = []
     permission_classes = []
+
     def post(self, request: HttpRequest) -> Response:
         data: dict = request.data
 
         name = data.get("name")
         password = data.get("password")
 
-        if name is None or name.strip() == "" or password is None or password.strip() == "":
+        if (
+            name is None
+            or name.strip() == ""
+            or password is None
+            or password.strip() == ""
+        ):
             raise Unauthorized
 
-        admin = Admin.objects.filter(name=name, is_enabled=True).first()
+        admin = Admin.objects.filter(
+            name=name, is_mailauth_completed=True, is_enabled=True
+        ).first()
         if admin is None:
             raise Unauthorized
 
@@ -50,8 +67,9 @@ class ListCreateAdminView(APIView):
     GET request returns all existing Admin objects serialized using AdminSerializer.
     POST request creates a new Admin object using the data provided in the request.
     """
+
     def get(self, request: HttpRequest) -> Response:
-        admins = Admin.objects.all().order_by('pk')
+        admins = Admin.objects.all().order_by("pk")
         admin_serializer = AdminSerializer(admins, many=True)
 
         return Response(admin_serializer.data)
@@ -63,19 +81,57 @@ class ListCreateAdminView(APIView):
         """
         data: dict = request.data
 
-        admin = Admin.objects.filter(name=data['name'], is_enabled=True).exists() 
+        admin = Admin.objects.filter(name=data["name"], is_enabled=True).exists()
 
         if admin:
-            list_error = ValidateError('name', [UNIQUE_ERR])
-            raise ValidationException(list_error)
+            list_error = ValidateError("name", [UNIQUE_ERR])
+            raise ValidationException(vars(list_error))
 
+        password = data["password"]
         data["password"] = gen_password(data["password"])
+
+        # Get hash
+        hash = gen_hash_email()
+        expired = timezone.now() + timedelta(
+            hours=int(settings.__getattr__("EXPIRED_MAIL"))
+        )
         admin_serializer = AdminSerializer(data=data)
         if admin_serializer.is_valid(raise_exception=True):
-            admin_serializer.save()
+            admin = admin_serializer.save()
+            mail_temp = MailTemp(
+                account_id=admin.id,
+                expire_time=expired,
+                hash=hash,
+            )
+            mail_temp.save()
+
+            try:
+                context = {
+                    "url_active": ConstantTemplateMail.CREATE_ADMIN.url_active
+                    + hash,  # Url active email
+                    "expired_mail": ConstantTemplateMail.CREATE_ADMIN.expired_mail,
+                    "password": password,
+                }
+                subject = ConstantTemplateMail.CREATE_ADMIN.subject
+                to = [admin_serializer.data["email"]]
+                body = f"""
+                    <html>
+                    <body>
+                        <h1>Welcome New Admin</h1>
+                        <p>Your password is: {context['password']}</p>
+                        <p>Please activate your account by clicking the link below:</p>
+                        <a href="http://{context['url_active']}" style="color:blue;">Activate Account</a>
+                        <p>This link will expire in {context['expired_mail']} hours.</p>
+                    </body>
+                    </html>
+                    """
+                # Send mail
+                send_email(subject, body, to)
+
+            except Exception as e:
+                print(e)
 
         return Response(admin_serializer.data)
-
 
 
 class DetailEditDeleteAdminView(APIView):
@@ -142,3 +198,87 @@ class DetailEditDeleteAdminView(APIView):
         admin.delete()
         return Response({"delete_id": id_delete})
 
+
+class VerifyMailCreateAdminView(APIView):
+    """API verify mail create account of admin.
+
+    Method get: verify email url
+    """
+
+    authentication_classes = []
+    permission_classes = []
+
+    def get(self, request: HttpRequest, hash: str) -> Response:
+        """API verify email url. Method GET
+
+        Parameters
+        ----------
+        request (HttpRequest):
+            The request from client
+
+            request data: None
+
+        hash (str):
+            Hash code to verify email
+
+        Returns
+        ----------
+        Response
+            a json empty when verify email url success
+
+        """
+        # Validation and get object
+        item = get_object_verify_email_create_admin(hash)
+
+        # Update is_mailauth_completed of admin
+        data_edit = {"is_mailauth_completed": ConstantAdmin.EMAIL_VERIFIED}
+
+        admin_serializer = AdminSerializer(
+            item["admin_item"], data=data_edit, partial=True
+        )
+
+        if admin_serializer.is_valid(raise_exception=True):
+            admin_serializer.save()
+
+            # Delete mail_temp item
+            MailTemp.objects.filter(pk=item["mail_temp_item"].id).delete()
+
+        return Response({})
+
+
+def get_object_verify_email_create_admin(hash: str) -> Dict[str, object]:
+    """Function validate hash of verify email create admin
+
+    Args:
+        hash (str): hash code which need to verified
+
+    Returns:
+        Dict[str, object]: dict of mail_temp and admin
+
+    Raises:
+        NotFoundException if validate error
+    """
+
+    mail_temp_item: MailTemp = MailTemp.objects.filter(
+        hash=hash,
+        expire_time__gte=timezone.now(),
+    ).first()
+
+    if mail_temp_item is None:
+        raise NotFoundException
+
+    # Get admin have:
+    # admin_id = account_id of mail_temps table
+    # is_mailauth_completed
+    admin_item: Admin = Admin.objects.filter(
+        id=mail_temp_item.account_id,
+        is_mailauth_completed=ConstantAdmin.EMAIL_NO_VERIFY,
+    ).first()
+
+    if admin_item is None:
+        raise NotFoundException
+
+    # Return value
+    return_value = {"mail_temp_item": mail_temp_item, "admin_item": admin_item}
+
+    return return_value
