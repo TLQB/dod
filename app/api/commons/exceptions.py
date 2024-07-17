@@ -46,3 +46,4 @@ class NotFoundException(APIException):
             self.data = data
 
         super().__init__(code=self.default_code)
+

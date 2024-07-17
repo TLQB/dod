@@ -11,4 +11,9 @@ urlpatterns = [
         views.DetailEditDeleteAdminView.as_view(),
         name="detail-edit-delete-admin",
     ),
+    path(
+        "<str:hash>/",
+        views.VerifyMailCreateAdminView.as_view(),
+        name="create-admin-verify-email",
+    ),
 ]
