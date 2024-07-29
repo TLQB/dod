@@ -6,6 +6,5 @@ from django.urls import path, include
 
 urlpatterns = [
     path("", TokenObtainPairView.as_view()),
-    path('refresh/', TokenRefreshView.as_view(), name='token_refresh'),    
-
+    path("refresh/", TokenRefreshView.as_view(), name="token_refresh"),
 ]

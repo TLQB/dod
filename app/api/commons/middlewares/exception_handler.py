@@ -12,6 +12,7 @@ from rest_framework import status
 import traceback
 import sys
 
+
 def _get_response(code, data=None):
     if isinstance(data, dict):
         return {"errors": [{"code": code, **data}]}
@@ -31,7 +32,7 @@ def exception_handler(exception, context):
             data=_get_response(APIErrorCode.HTTP_500_INTERNAL_SERVER_ERROR),
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
-    
+
     # Change response data of built-in unauthorized exception
     if isinstance(exception, (NotAuthenticated, AuthenticationFailed)):
         response.data = _get_response(APIErrorCode.HTTP_401_UNAUTHORIZED)

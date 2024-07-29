@@ -1,6 +1,9 @@
 from rest_framework import serializers
 from rest_framework_simplejwt.tokens import RefreshToken, Token
 from typing import Dict, List, Union
+import jwt
+from django.conf import settings
+
 
 class TokenModel:
     "Class token model"
@@ -49,11 +52,42 @@ def get_tokens_for_admin(admin: AdminTokenModel) -> TokenModel:
     refresh_token = RefreshToken.for_user(admin)
     access_token = refresh_token.access_token
 
-    # # Custom access_token claims
-    # access_token_custom = custom_admin_token_claims(str(access_token), admin)
+    # Custom access_token claims
+    access_token_custom = custom_admin_token_claims(str(access_token), admin)
 
     # # Custom refresh_token claims
     # refresh_token_custom = custom_admin_refresh_token_claims(str(refresh_token), admin)
 
     # return TokenModel(str(refresh_token_custom), str(access_token_custom))
-    return TokenModel(str(refresh_token), str(access_token))
+    return TokenModel(str(refresh_token), str(access_token_custom))
+
+
+def custom_admin_token_claims(access_token: str, admin: AdminTokenModel) -> str:
+    """Function custom token claims
+    Args:
+        access_token (str): An access_token wanted to custom token claims
+        admin (AdminTokenModel): Information of admin to custom token claims
+
+    Returns:
+        str: An access_token after custom token claims
+    """
+
+    # Decode token to custom token claims
+    decode_jwt = jwt.decode(
+        access_token, settings.__getattr__("SECRET_KEY"), algorithms=["HS256"]
+    )
+
+    # Custom token claims
+    decode_jwt["name"] = admin.name
+    decode_jwt["email"] = admin.email
+    decode_jwt["is_master"] = admin.is_master
+    # decode_jwt["policy_groups"] = admin.policy_groups
+    # decode_jwt["products"] = admin.products
+    decode_jwt["customer_key"] = settings.__getattr__("CUSTOMER_KEY")
+
+    # Encode token after custom token claims
+    encoded = jwt.encode(
+        decode_jwt, settings.__getattr__("SECRET_KEY"), algorithm="HS256"
+    )
+
+    return encoded

@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from models_v1.models import Admin
 
+
 class AdminSerializer(serializers.ModelSerializer):
     class Meta:
         model = Admin
@@ -13,4 +14,4 @@ class AdminSerializer(serializers.ModelSerializer):
             "is_enabled",
             "config",
             "is_super",
-        ]    
+        ]

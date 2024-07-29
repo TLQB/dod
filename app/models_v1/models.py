@@ -33,6 +33,7 @@ class Admin(AbstractBaseUser, BaseModel):
         db_table = "admins"
         app_label = "api"
 
+
 class MailTemp(BaseModel):
     id = models.AutoField(auto_created=True, primary_key=True)
     account_id = models.PositiveIntegerField()
