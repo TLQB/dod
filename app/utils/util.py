@@ -82,19 +82,30 @@ def send_email(subject: str, body: str, to: List[str]) -> int:
     Returns:
         int: 1 if send success, 0 if there's nobody to send to (no recipients)
     """
-    email = EmailMessage(subject=subject, body=body, to=to)
+    email = EmailMessage(subject, body, "dod@powake.dev", to)
     email.content_subtype = "html"
     return email.send()
 
 
 def send_email_test(subject: str, body: str, to: List[str]):
-    mail = mt.Mail(
-        sender=mt.Address(email="mailtrap@demomailtrap.com", name="DOD"),
-        to=[mt.Address(email=to[0])],
-        subject=subject,
-        html=body,
-        category="DOD Admin",
-    )
+    # mail = mt.Mail(
+    #     sender=mt.Address(email="mailtrap@demomailtrap.com", name="DOD"),
+    #     to=[mt.Address(email=to[0])],
+    #     subject=subject,
+    #     html=body,
+    #     category="DOD Admin",
+    # )
 
-    client = mt.MailtrapClient(token="78e64ff24ee5cc7d21d4ee0d1d382abd")
-    client.send(mail)
+    # client = mt.MailtrapClient(token="78e64ff24ee5cc7d21d4ee0d1d382abd")
+    # client.send(mail)
+    from django.core.mail import EmailMultiAlternatives
+
+    subject = subject
+    text_content = "This is the plain text version."
+    html_content = body
+    from_email = "tranlequybaotk12@gmail.com"
+    to = to
+
+    msg = EmailMultiAlternatives(subject, text_content, from_email, to)
+    msg.attach_alternative(html_content, "text/html")
+    msg.send()

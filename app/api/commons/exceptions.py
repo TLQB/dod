@@ -3,6 +3,7 @@ from rest_framework.exceptions import APIException
 from api.commons.constants.api_error_message import APIErrorMessage
 from api.commons.constants.api_error_code import APIErrorCode
 
+
 class ValidationException(APIException):
     """
     Class for validation exception.
@@ -18,10 +19,12 @@ class ValidationException(APIException):
 
         super().__init__(code=self.default_code)
 
+
 class Unauthorized(APIException):
     """
     Class for unauthorized exception.
     """
+
     status_code = status.HTTP_401_UNAUTHORIZED
     default_code = APIErrorCode.HTTP_401_UNAUTHORIZED
     default_detail = APIErrorMessage.HTTP_401_UNAUTHORIZED
@@ -31,6 +34,7 @@ class Unauthorized(APIException):
             self.data = data
 
         super().__init__(code=self.default_code)
+
 
 class NotFoundException(APIException):
     """
@@ -46,4 +50,3 @@ class NotFoundException(APIException):
             self.data = data
 
         super().__init__(code=self.default_code)
-

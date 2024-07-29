@@ -13,7 +13,11 @@ https://docs.djangoproject.com/en/3.2/ref/settings/
 from pathlib import Path
 import os
 from datetime import timedelta
+from corsheaders.defaults import default_headers
 
+CORS_ALLOW_HEADERS = list(default_headers) + [
+    "env",
+]
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -22,8 +26,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/3.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-# SECRET_KEY = 'django-insecure-a47$9sd&19tf7c_=9ssevd%sr692smpi_29mfhz&kn@3b3)4l='
-SECRET_KEY = os.environ.get("SECRET_KEY")
+SECRET_KEY = (
+    "django-insecure-a47$9sd&19tf7c_=9ssevd%sr692smpi_29mfhz&kn@3b3)4l="
+)
+# SECRET_KEY = os.environ.get("SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
 # DEBUG = True
@@ -43,13 +49,16 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "rest_framework",
     "rest_framework_simplejwt",
+    "corsheaders",
     "api",
     "models_v1",
+    "shares",
 ]
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
+    "corsheaders.middleware.CorsMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
@@ -62,7 +71,7 @@ ROOT_URLCONF = "app_routes.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [],
+        "DIRS": [os.path.join(BASE_DIR, "shares/template_mail")],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -76,6 +85,9 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = "app_config.wsgi.application"
+
+
+CORS_ORIGIN_WHITELIST = ["http://localhost:9527", "http://127.0.0.1:9527"]
 
 
 # Database
@@ -139,22 +151,26 @@ AUTH_USER_MODEL = "api.Admin"
 # https://docs.djangoproject.com/en/3.2/ref/settings/#auth-password-validators
 
 # Setting Email
-EMAIL_HOST = "smtp.gmail.com"  # "localhost"
-EMAIL_PORT = 587
-EMAIL_HOST_USER = "tranlequybaotk12@gmail.com"
-EMAIL_HOST_PASSWORD = "zlvb xxkr jdbz fgik"
+# EMAIL_HOST = "smtp.gmail.com"  # "localhost"
+# EMAIL_PORT = 587
+# EMAIL_HOST_USER = "tranlequybaotk12@gmail.com"
+# EMAIL_HOST_PASSWORD = "zlvb xxkr jdbz fgik"
+
 DEFAULT_FROM_EMAIL = "DOD <whatever@gmail.com>"
-EMAIL_USE_TLS = True
 
 CONSOLE_BASE_URL = os.getenv("console_base_url")
 EXPIRED_MAIL = 24
 
-# EMAIL_HOST = 'live.smtp.mailtrap.io'
-# EMAIL_HOST_USER = 'api'
-# EMAIL_HOST_PASSWORD = '78e64ff24ee5cc7d21d4ee0d1d382abd'
-# EMAIL_PORT = '587'
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 
-# EMAIL_BACKEND="django.core.mail.backends.smtp.EmailBackend"
+
+# Email Settings
+EMAIL_USE_SSL = True
+EMAIL_HOST = "smtp.zoho.com"
+EMAIL_PORT = 465
+EMAIL_HOST_USER = "dod@powake.dev"
+EMAIL_HOST_PASSWORD = "0V0wDRsxm2hw"
+
 
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -195,3 +211,4 @@ STATIC_URL = "/static/"
 # https://docs.djangoproject.com/en/3.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+CUSTOMER_KEY = "testabc"

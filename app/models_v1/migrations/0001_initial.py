@@ -7,22 +7,26 @@ class Migration(migrations.Migration):
 
     initial = True
 
-    dependencies = [
-    ]
+    dependencies = []
 
     operations = [
         migrations.CreateModel(
-            name='MailTemp',
+            name="MailTemp",
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False)),
-                ('created', models.DateTimeField(auto_now_add=True)),
-                ('modified', models.DateTimeField(auto_now=True)),
-                ('account_id', models.PositiveIntegerField()),
-                ('hash', models.CharField(max_length=255)),
-                ('expire_time', models.DateTimeField()),
+                (
+                    "id",
+                    models.AutoField(
+                        auto_created=True, primary_key=True, serialize=False
+                    ),
+                ),
+                ("created", models.DateTimeField(auto_now_add=True)),
+                ("modified", models.DateTimeField(auto_now=True)),
+                ("account_id", models.PositiveIntegerField()),
+                ("hash", models.CharField(max_length=255)),
+                ("expire_time", models.DateTimeField()),
             ],
             options={
-                'db_table': 'mail_temps',
+                "db_table": "mail_temps",
             },
         ),
     ]

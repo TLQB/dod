@@ -5,12 +5,22 @@ from django.utils import timezone
 from models_v1.models import Admin, MailTemp
 from api.api_v1.admins.serializers import AdminSerializer
 from api.commons.validation import ValidateError, UNIQUE_ERR
-from api.commons.exceptions import ValidationException, Unauthorized, NotFoundException
+from api.commons.exceptions import (
+    ValidationException,
+    Unauthorized,
+    NotFoundException,
+)
 from django.contrib.auth.hashers import check_password
 from shares.token import TokenSerializer, AdminTokenModel, get_tokens_for_admin
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.authentication import JWTAuthentication
-from utils.util import gen_password, get_object, send_email, gen_hash_email
+from utils.util import (
+    gen_password,
+    get_object,
+    send_email,
+    gen_hash_email,
+    send_email_test,
+)
 from django.contrib.auth.hashers import check_password, make_password
 from api.commons.constants.template_mail import ConstantTemplateMail
 from django.template.loader import render_to_string
@@ -19,6 +29,7 @@ from typing import Dict
 from django.conf import settings
 from datetime import timedelta
 from api.commons.constants.admin import ConstantAdmin
+from django.template.loader import render_to_string
 
 
 class LoginView(APIView):
@@ -28,19 +39,19 @@ class LoginView(APIView):
     def post(self, request: HttpRequest) -> Response:
         data: dict = request.data
 
-        name = data.get("name")
+        username = data.get("username")
         password = data.get("password")
 
         if (
-            name is None
-            or name.strip() == ""
+            username is None
+            or username.strip() == ""
             or password is None
             or password.strip() == ""
         ):
             raise Unauthorized
 
         admin = Admin.objects.filter(
-            name=name, is_mailauth_completed=True, is_enabled=True
+            name=username, is_mailauth_completed=True, is_enabled=True
         ).first()
         if admin is None:
             raise Unauthorized
@@ -81,7 +92,9 @@ class ListCreateAdminView(APIView):
         """
         data: dict = request.data
 
-        admin = Admin.objects.filter(name=data["name"], is_enabled=True).exists()
+        admin = Admin.objects.filter(
+            name=data["name"], is_enabled=True
+        ).exists()
 
         if admin:
             list_error = ValidateError("name", [UNIQUE_ERR])
@@ -114,17 +127,9 @@ class ListCreateAdminView(APIView):
                 }
                 subject = ConstantTemplateMail.CREATE_ADMIN.subject
                 to = [admin_serializer.data["email"]]
-                body = f"""
-                    <html>
-                    <body>
-                        <h1>Welcome New Admin</h1>
-                        <p>Your password is: {context['password']}</p>
-                        <p>Please activate your account by clicking the link below:</p>
-                        <a href="http://{context['url_active']}" style="color:blue;">Activate Account</a>
-                        <p>This link will expire in {context['expired_mail']} hours.</p>
-                    </body>
-                    </html>
-                    """
+                body = render_to_string(
+                    ConstantTemplateMail.CREATE_ADMIN.template, context
+                )
                 # Send mail
                 send_email(subject, body, to)
 

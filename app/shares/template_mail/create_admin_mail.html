@@ -1,16 +1,9 @@
 <html>
-<head>
-</head>
 <body>
-    <div>Test</div>
-    <div>abc</div>
-    <br>
-    <div>password：{{password}}</div>
-    <br>
-    <div>URL</div>
-    <div id="content">
-        <a href="{{url_active}}" style='color:blue'>{{url_active}}</a>
-    </div>
-    <!-- <div>※URLの期限は{{expired_mail}}時間です。</div> -->
+ <h1>Welcome New Admin</h1>
+ <p>Your password is: {{password}}</p>
+ <p>Please activate your account by clicking the link below:</p>
+ <a href="http://{{url_active}}" style="color:blue;">Activate Account</a>
+ <p>This link will expire in {{expired_mail}} hours.</p>
 </body>
-</html>
+</html> 

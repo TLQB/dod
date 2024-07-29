@@ -2,6 +2,7 @@ from typing import List
 
 UNIQUE_ERR = "unique"
 
+
 class ValidateError:
     value: str
     type: List[str]
