@@ -82,7 +82,7 @@ def send_email(subject: str, body: str, to: List[str]) -> int:
     Returns:
         int: 1 if send success, 0 if there's nobody to send to (no recipients)
     """
-    email = EmailMessage(subject, body, "dod@powake.dev", to)
+    email = EmailMessage(subject, body, "Powake <no-reply@powake.dev>", to)
     email.content_subtype = "html"
     return email.send()
 
