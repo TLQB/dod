@@ -14,6 +14,7 @@ from pathlib import Path
 import os
 from datetime import timedelta
 from corsheaders.defaults import default_headers
+import dj_database_url
 
 CORS_ALLOW_HEADERS = list(default_headers) + [
     "env",
@@ -36,7 +37,7 @@ SECRET_KEY = (
 DEBUG = int(os.environ.get("DEBUG", default=0))
 
 # ALLOWED_HOSTS = []
-ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS").split(" ")
+ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS").split(" ")
 
 # Application definition
 
@@ -51,6 +52,7 @@ INSTALLED_APPS = [
     "rest_framework_simplejwt",
     "corsheaders",
     "api",
+    "tools",
     "models_v1",
     "shares",
 ]
@@ -86,31 +88,15 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "app_config.wsgi.application"
 
-
-CORS_ORIGIN_WHITELIST = ["http://localhost:9527", "http://127.0.0.1:9527"]
-
-
-# Database
-# https://docs.djangoproject.com/en/3.2/ref/settings/#databases
-
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.sqlite3',
-#         'NAME': BASE_DIR / 'db.sqlite3',
-#     }
-# }
+CORS_ORIGIN_ALLOW_ALL = True
+CORS_ORIGIN_WHITELIST = [
+        "http://localhost:9527",
+        "http://127.0.0.1:9527", 
+        "https://dodfe.nettify.app", 
+        "https://powake.dev"
+    ]
 
 
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.postgresql_psycopg2',
-#         'NAME': 'postgres',
-#         'USER': 'tranlequybao',
-#         'PASSWORD': 'complexpassword',
-#         'HOST': 'localhost',
-#         'PORT': '5432',
-#     }
-# }
 REST_FRAMEWORK = {
     "DEFAULT_PARSER_CLASSES": (
         "rest_framework.parsers.JSONParser",
@@ -130,11 +116,9 @@ SIMPLE_JWT = {
     "AUTH_HEADER_TYPES": ("Bearer",),
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=60),
     "SLIDING_TOKEN_REFRESH_LIFETIME": timedelta(days=1),
-    "SLIDING_TOKEN_LIFETIME": timedelta(days=30),
-    "SLIDING_TOKEN_REFRESH_LIFETIME_LATE_USER": timedelta(days=1),
-    "SLIDING_TOKEN_LIFETIME_LATE_USER": timedelta(days=30),
 }
 
+# For run local
 DATABASES = {
     "default": {
         "ENGINE": os.environ.get("SQL_ENGINE", "django.db.backends.sqlite3"),
@@ -146,6 +130,11 @@ DATABASES = {
     }
 }
 
+# For deploy
+# DATABASES = {
+#     'default': dj_database_url.parse(os.environ.get('DATABASE_URL'), conn_max_age=600),
+# }
+
 AUTH_USER_MODEL = "api.Admin"
 # Password validation
 # https://docs.djangoproject.com/en/3.2/ref/settings/#auth-password-validators
@@ -156,20 +145,16 @@ AUTH_USER_MODEL = "api.Admin"
 # EMAIL_HOST_USER = "tranlequybaotk12@gmail.com"
 # EMAIL_HOST_PASSWORD = "zlvb xxkr jdbz fgik"
 
-DEFAULT_FROM_EMAIL = "DOD <whatever@gmail.com>"
-
-CONSOLE_BASE_URL = os.getenv("console_base_url")
-EXPIRED_MAIL = 24
-
-EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
-
-
-# Email Settings
 EMAIL_USE_SSL = True
 EMAIL_HOST = "smtp.zoho.com"
 EMAIL_PORT = 465
 EMAIL_HOST_USER = "dod@powake.dev"
 EMAIL_HOST_PASSWORD = "0V0wDRsxm2hw"
+
+DEFAULT_FROM_EMAIL = "DOD <whatever@gmail.com>"
+CONSOLE_BASE_URL = "https://dod.fly.dev/api/v1/admins/" #os.getenv("console_base_url")
+EXPIRED_MAIL = 24
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 
 
 AUTH_PASSWORD_VALIDATORS = [
@@ -193,8 +178,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = "en-us"
 
-TIME_ZONE = "UTC"
-
+TIME_ZONE = 'Asia/Ho_Chi_Minh'
 USE_I18N = True
 
 USE_L10N = True

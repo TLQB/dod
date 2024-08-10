@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Processing Excel Data</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+<style>
+    .form-section {
+        margin-bottom: 20px;
+        padding: 20px;
+        border: 1px solid #ccc;
+        border-radius: 10px;
+        background-color: #f9f9f9;
+    }
+    .form-check {
+        margin-bottom: 10px;
+    }
+    .form-check-input {
+        margin-right: 10px;
+    }
+    .form-check-label {
+        margin-bottom: 0;
+    }
+    .form-row {
+        display: flex;
+        flex-wrap: wrap;
+    }
+    .form-row .col-sm-4 {
+        display: flex;
+        align-items: center;
+    }
+    .form-row .form-check {
+        display: flex;
+        align-items: center;
+    }
+    .btn-container {
+        text-align: center;
+    }
+    .btn-custom {
+        width: 150px;
+    }
+    .checkbox-container {
+        margin-left: 20px;
+    }
+</style>
+
+</head>
+<body>
+    <div class="container mt-5">
+        <h2 class="text-center mb-4">Processing Excel Data</h2>
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            <div class="form-section">
+                <div class="form-group row">
+                    <label for="input-file" class="col-sm-3 col-form-label">Input Filename</label>
+                    <div class="col-sm-9">
+                        <input type="file" id="input-file" name="input_filename" class="form-control" accept=".xlsx">
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <label for="output-file" class="col-sm-3 col-form-label">Output Filename</label>
+                    <div class="col-sm-9">
+                        <input type="text" id="output-file" name="output_filename" class="form-control">
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <h5>Select sheet names:</h5>
+                <div class="form-row checkbox-container" id="sheet-names">
+                    <!-- Checkbox options will be added here dynamically -->
+                </div>
+            </div>
+
+            <div class="form-section">
+                <h5>Select name brand render output file:</h5>
+                <div class="form-row checkbox-container">
+                    {% for checkbox in form.brand %}
+                    <div class="col-sm-4">
+                        <div class="form-check">
+                            {{ checkbox }}
+                            <label class="form-check-label" for="{{ checkbox.id_for_label }}">{{ checkbox.choice_label }}</label>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="form-section">
+                <h5>Select name column render output file:</h5>
+                <div class="form-row checkbox-container">
+                    {% for checkbox in form.column %}
+                    <div class="col-sm-4">
+                        <div class="form-check">
+                            {{ checkbox }}
+                            <label class="form-check-label" for="{{ checkbox.id_for_label }}">{{ checkbox.choice_label }}</label>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="btn-container">
+                <button type="button" id="upload-file-button" class="btn btn-secondary btn-custom">Processing</button>
+                <button type="submit" class="btn btn-primary btn-custom">Export File</button>
+            </div>
+        </form>
+
+        <script>
+            document.getElementById('upload-file-button').addEventListener('click', function() {
+                const fileInput = document.getElementById('input-file');
+                const formData = new FormData();
+                formData.append('input_filename', fileInput.files[0]);
+
+                fetch("{% url 'get_file_data' %}", {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    // Update the form with new choices for sheet names
+                    const sheetDiv = document.getElementById('sheet-names');
+                    sheetDiv.innerHTML = '';
+                    sheetDiv.className = 'form-row checkbox-container';
+                    data.sheets_choices.forEach(([value, text]) => {
+                        const checkbox = document.createElement('input');
+                        checkbox.type = 'checkbox';
+                        checkbox.value = value;
+                        checkbox.name = 'sheet_name';
+                        checkbox.id = `sheet_${value}`;
+                        checkbox.className = 'form-check-input';
+
+                        console.log(value)
+
+                        const label = document.createElement('label');
+                        label.className = 'form-check-label';
+                        label.htmlFor = checkbox.id;
+                        label.textContent = text;
+
+                        const formCheckDiv = document.createElement('div');
+                        formCheckDiv.className = 'col-sm-4';
+                        formCheckDiv.appendChild(checkbox);
+                        formCheckDiv.appendChild(label);
+
+                        sheetDiv.appendChild(formCheckDiv);
+                    });
+
+                    // Update the form with new choices for brands
+                    const brandDiv = document.querySelector('.form-section:nth-of-type(3) .form-row');
+                    brandDiv.innerHTML = '';
+                    brandDiv.className = 'form-row checkbox-container';
+                    data.brands_choices.forEach(([value, text]) => {
+                        const checkbox = document.createElement('input');
+                        checkbox.type = 'checkbox';
+                        checkbox.value = value;
+                        checkbox.name = 'brand';
+                        checkbox.id = `brand_${value}`;
+                        checkbox.className = 'form-check-input';
+
+                        const label = document.createElement('label');
+                        label.className = 'form-check-label';
+                        label.htmlFor = checkbox.id;
+                        label.textContent = text;
+
+                        const formCheckDiv = document.createElement('div');
+                        formCheckDiv.className = 'col-sm-4';
+                        formCheckDiv.appendChild(checkbox);
+                        formCheckDiv.appendChild(label);
+
+                        brandDiv.appendChild(formCheckDiv);
+                    });
+
+                    // Update the form with new choices for columns
+                    const columnDiv = document.querySelector('.form-section:nth-of-type(4) .form-row');
+                    columnDiv.innerHTML = '';
+                    columnDiv.className = 'form-row checkbox-container';
+
+                    const default_check_columns = [
+                        "No.",
+                        "Ref No.",
+                        "Product Name",
+                        "Last Selling Price",
+                        "Sales QTY",
+                        "Sales Amount",
+                        "Inv. QTY",
+                    ];
+
+                    data.columns_choices.forEach(([value, text]) => {
+                        const checkbox = document.createElement('input');
+                        checkbox.type = 'checkbox';
+                        checkbox.value = value;
+                        checkbox.name = 'column';
+                        checkbox.id = `column_${value}`;
+                        checkbox.className = 'form-check-input';
+
+                        // Kiểm tra nếu cột nên được chọn mặc định
+                        if (default_check_columns.includes(text)) {
+                            checkbox.checked = true;
+                        }
+
+                        const label = document.createElement('label');
+                        label.className = 'form-check-label';
+                        label.htmlFor = checkbox.id;
+                        label.textContent = text;
+
+                        const formCheckDiv = document.createElement('div');
+                        formCheckDiv.className = 'col-sm-4';
+                        formCheckDiv.appendChild(checkbox);
+                        formCheckDiv.appendChild(label);
+
+                        columnDiv.appendChild(formCheckDiv);
+                    });
+                })
+                .catch(error => console.error('Error:', error));
+            });
+
+            document.querySelector('form').addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    var formData = new FormData(this);
+
+                    fetch("{% url 'export_data_excel' %}", {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                        }
+                    })
+                    .then(response => {
+                        if (response.ok) {
+                            return response.blob();
+                        }
+                        throw new Error('Network response was not ok.');
+                    })
+                    .then(blob => {
+                        var url = window.URL.createObjectURL(blob);
+                        var a = document.createElement('a');
+                        a.href = url;
+                        a.download = formData.get('output_filename');
+                        document.body.appendChild(a);
+                        a.click();
+                        a.remove();
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('An error occurred while processing the data.');
+                    });
+                });
+        </script>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
+</html>

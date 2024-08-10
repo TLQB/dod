@@ -1,16 +1,18 @@
 import secrets
 import string
 from django.contrib.auth.hashers import make_password
-from typing import Any
+from typing import Any, List, Dict 
+from django.db.models.query import QuerySet
+from rest_framework import serializers
 from api.commons.exceptions import (
     ValidationException,
     Unauthorized,
     NotFoundException,
 )
 from django.core.mail.message import EmailMessage
-from typing import List
-import mailtrap as mt
 from models_v1.models import Admin, MailTemp
+from django.core.paginator import Paginator
+from api.commons.constants.pagination import Pagination
 
 
 def gen_password(password: str) -> str:
@@ -109,3 +111,72 @@ def send_email_test(subject: str, body: str, to: List[str]):
     msg = EmailMultiAlternatives(subject, text_content, from_email, to)
     msg.attach_alternative(html_content, "text/html")
     msg.send()
+
+
+def pagination_items(
+    items: QuerySet,
+    serializer: serializers,
+    current_page: Any,
+    per_page: Any,
+    context: dict = None,
+    all: str = None,
+) -> Dict:
+    """
+    Function get pagination of list queryset with current_page and per_page
+    Input
+    ----------
+        items: QuerySet,
+        serializer: serializers,
+        current_page: Any,
+        per_page: Any
+        context: dict (context of serializers)
+
+    Returns
+    ----------
+        List items of serializers
+    """
+
+    if all is None or all.strip().lower() != "true":
+        print(">>>>>>>>>>")
+
+        if current_page.isnumeric() and int(current_page) > 0:
+            current_page = int(current_page)
+        else:
+            current_page = Pagination.CURRENT_PAGE
+
+        if per_page.isnumeric() and int(per_page) > 0:
+            per_page = int(per_page)
+        else:
+            per_page = Pagination.PER_PAGE
+
+        # Convert list items to pagination
+        page_items = Paginator(items, per_page)
+
+        items = page_items.get_page(current_page)
+
+    print(">>>>>>>>>>")
+
+    # Convert list object items to serializers data
+    data = serializer(items, many=True, context=context).data
+
+    # Setting current_page, per_page and total response when param all = true
+    if all is None or all.strip().lower() != "true":
+        current_page = (
+            page_items.num_pages
+            if page_items.num_pages < current_page
+            else current_page
+        )
+        total = page_items.count
+    else:
+        current_page = Pagination.CURRENT_PAGE
+        per_page = total = len(data)
+
+    # Format data response of pagination list
+    result = {
+        "current_page": current_page,
+        "per_page": per_page,
+        "total": total,
+        "items": data,
+    }
+
+    return result

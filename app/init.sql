@@ -1,8 +1,8 @@
 CREATE TABLE IF NOT EXISTS admins (
     id SERIAL PRIMARY KEY,
     last_login TIMESTAMP,
-    created TIMESTAMP,
-    modified TIMESTAMP,
+    created TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    modified TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     email VARCHAR(255),
     password VARCHAR(255),
     name VARCHAR(50) UNIQUE,
@@ -13,11 +13,11 @@ CREATE TABLE IF NOT EXISTS admins (
     is_super BOOLEAN
 );
 
-INSERT INTO admins (email, password, name, is_mailauth_completed, is_master, is_enabled, config, is_super)
-VALUES ('tranlequybaotk12@gmail.com', 'pbkdf2_sha256$260000$ew6hVtSRdUXukBLmVz79Xk$EGbPYYmgyz5KsauAb0ukAZyNSKDYtX3MXPVrCFJbJP8=', 'master', true, true, true, '{}', true);
+INSERT INTO admins (created, modified, email, password, name, is_mailauth_completed, is_master, is_enabled, config, is_super)
+VALUES (CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'tranlequybaotk12@gmail.com', 'pbkdf2_sha256$260000$ew6hVtSRdUXukBLmVz79Xk$EGbPYYmgyz5KsauAb0ukAZyNSKDYtX3MXPVrCFJbJP8=', 'master', true, true, true, '{}', true);
 
 
-CREATE TABLE mail_temps (
+CREATE TABLE IF NOT EXISTS mail_temps (
     id SERIAL PRIMARY KEY,
     account_id INTEGER NOT NULL,
     hash VARCHAR(255) NOT NULL,

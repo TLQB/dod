@@ -20,6 +20,7 @@ from utils.util import (
     send_email,
     gen_hash_email,
     send_email_test,
+    pagination_items,
 )
 from django.contrib.auth.hashers import check_password, make_password
 from api.commons.constants.template_mail import ConstantTemplateMail
@@ -30,6 +31,9 @@ from django.conf import settings
 from datetime import timedelta
 from api.commons.constants.admin import ConstantAdmin
 from django.template.loader import render_to_string
+import jwt
+from rest_framework_simplejwt.serializers import TokenRefreshSerializer
+from shares.token import custom_admin_token_claims
 
 
 class LoginView(APIView):
@@ -71,6 +75,86 @@ class LoginView(APIView):
 
         raise Unauthorized
 
+class CheckLoginView(APIView):
+    """Class check token login of admin
+
+    Method post: check token of admin login
+    """
+    authentication_classes = []
+    permission_classes = []
+    def post(self, request: HttpRequest) -> Response:
+        """API check token of admin login. Method POST
+
+        Parameters
+        ----------
+        request (HttpRequest):
+            The request from client
+
+        Returns
+        ----------
+        Response
+            New access token of admin login
+
+        Raises
+        ----------
+        Unauthorized if refresh token is invalid or expired
+        """
+
+        data: dict = request.data
+
+
+
+
+        # Check empty refresh token
+        if data.get("refresh_token") is None:
+            raise Unauthorized
+
+        # Get data refresh token
+        refresh = data["refresh_token"]
+
+        # Decode refresh token if is expired token or invalid then raise Unauthorized
+        try:
+            # print(refresh, "22222222222", settings.__getattr__("SECRET_KEY") )
+            decodeJTW = jwt.decode(
+                refresh,
+                settings.__getattr__("SECRET_KEY"),
+                algorithms=["HS256"],
+            )
+        except Exception as e:
+            print("000000000000000", e)
+            raise Unauthorized
+
+
+
+        # Check token is not token of admin
+        if decodeJTW.get("is_master") is None:
+            raise Unauthorized
+
+        print("111111111111111111")
+
+        # Convert refresh token for token refresh serializer
+        data_refresh = {"refresh": refresh}
+        serializer = TokenRefreshSerializer()
+
+        # Get access token from refresh token
+        access = serializer.validate(data_refresh)
+
+        # Get admin info from database
+        admin_info: Admin = Admin.objects.filter(id=decodeJTW["id"]).first()
+
+        # Set model token
+        model = AdminTokenModel(
+            admin_info.id,
+            admin_info.name,
+            admin_info.email,
+            admin_info.is_master,
+        )
+
+        # Get custom token claims
+        access_token_custom = custom_admin_token_claims(access["access"], model)
+
+        # Response access_token token
+        return Response({"access_token": access_token_custom})
 
 class ListCreateAdminView(APIView):
     """
@@ -78,12 +162,18 @@ class ListCreateAdminView(APIView):
     GET request returns all existing Admin objects serialized using AdminSerializer.
     POST request creates a new Admin object using the data provided in the request.
     """
-
     def get(self, request: HttpRequest) -> Response:
+        current_page = request.GET.get("current_page")
+        per_page = request.GET.get("per_page")
+        all = request.GET.get("all")
         admins = Admin.objects.all().order_by("pk")
-        admin_serializer = AdminSerializer(admins, many=True)
+        # admin_serializer = AdminSerializer(admins, many=True)
+        data = pagination_items(
+            admins, AdminSerializer, current_page, per_page, None, all
+        )
+        return Response(data)
 
-        return Response(admin_serializer.data)
+        # return Response(admin_serializer.data)
 
     def post(self, request: HttpRequest) -> Response:
         """
@@ -148,7 +238,6 @@ class DetailEditDeleteAdminView(APIView):
     patch -- Update admin details based on the admin ID and data provided.
     delete -- Delete admin details based on the admin ID provided.
     """
-
     def get(self, request: HttpRequest, admin_id: int) -> Response:
         """
         Retrieve admin details from the database based on the provided admin ID.
