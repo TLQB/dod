@@ -1,3 +1,6 @@
+-- Delete data from the admins table if it exists
+-- DELETE FROM admins WHERE EXISTS (SELECT 1 FROM admins);
+
 CREATE TABLE IF NOT EXISTS admins (
     id SERIAL PRIMARY KEY,
     last_login TIMESTAMP,
@@ -16,6 +19,8 @@ CREATE TABLE IF NOT EXISTS admins (
 INSERT INTO admins (created, modified, email, password, name, is_mailauth_completed, is_master, is_enabled, config, is_super)
 VALUES (CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'tranlequybaotk12@gmail.com', 'pbkdf2_sha256$260000$ew6hVtSRdUXukBLmVz79Xk$EGbPYYmgyz5KsauAb0ukAZyNSKDYtX3MXPVrCFJbJP8=', 'master', true, true, true, '{}', true);
 
+-- Delete data from the mail_temps table if it exists
+-- DELETE FROM mail_temps WHERE EXISTS (SELECT 1 FROM mail_temps);
 
 CREATE TABLE IF NOT EXISTS mail_temps (
     id SERIAL PRIMARY KEY,
@@ -25,3 +30,7 @@ CREATE TABLE IF NOT EXISTS mail_temps (
     created TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     modified TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
+
+
+
