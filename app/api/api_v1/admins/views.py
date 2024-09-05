@@ -267,7 +267,7 @@ class DetailEditDeleteAdminView(APIView):
         A JSON response containing the updated serialized admin details.
         """
         data: dict = request.data
-        data["password"] = gen_password(data["password"])
+        # data["password"] = gen_password(data["password"])
 
         admin = get_object(Admin, admin_id)
 
